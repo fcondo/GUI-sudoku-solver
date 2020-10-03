@@ -5,11 +5,12 @@
 """
 import time
 import pygame
+import json
 
 from copy import deepcopy
 from solver import solve
 from math import floor
-
+from random import randint
 
 WIDTH = 800
 HEIGHT = 940
@@ -43,7 +44,7 @@ class Cube:
         x = self.row * self.width
         y = self.col * self.height
         s = ''
-        color = (125, 125, 125)
+        color = (0, 15, 185)
         pos_x = x + self.width/2 - 12
         pos_y = y + self.height/2 - 15
 
@@ -56,7 +57,7 @@ class Cube:
             
         # elif(not self.is_grid and self.temp != 0):
         elif(self.temp != 0):
-            size = 30
+            size = 35
             s = self.temp
             pos_x = x + 5
             pos_y = y + 5
@@ -139,25 +140,17 @@ class Grid:
 
         self.cubes[ii][jj].selected = True
         self.selected = (ii, jj)
-        # print(ii, jj)
     
     def random(self):
-        sudoku_grid = [ [0,8,0,  0,0,0,  2,0,0],
-                    [0,0,0,  0,8,4,  0,9,0],
-                    [0,0,6,  3,2,0,  0,1,0],
-                    
-                    [0,9,7,  0,0,0,  0,8,0],
-                    [8,0,0,  9,0,3,  0,0,2],
-                    [0,1,0,  0,0,0,  9,5,0],
-
-                    [0,7,0,  0,4,5,  8,0,0],
-                    [0,3,0,  7,1,0,  0,0,0],
-                    [0,0,8,  0,0,0,  0,4,0]
-                ]
+        with open('grids.json', 'r') as f:
+            data = json.load(f)
+        i = str(randint(0, len(data.keys()) - 1))
+        
+        sudoku_grid = data[i]
         for i in range(len(sudoku_grid)):
             for j in range(len(sudoku_grid[0])):
                 self.cubes[i][j].val = sudoku_grid[i][j]
-        
+        self.fix_grid()
         print('RANDOM')
 
     def check_solution(self):
@@ -270,6 +263,69 @@ class Sudoku_GUI:
 
         self.execute()
 
+    def handle_mouse(self):
+        pass
+
+    def get_pressed_number(self, event):
+        key = 0
+        if(event.key == pygame.K_1 or event.key == pygame.K_KP1):
+            key = 1
+        if(event.key == pygame.K_2 or event.key == pygame.K_KP2):
+            key = 2
+        if(event.key == pygame.K_3 or event.key == pygame.K_KP3):
+            key = 3
+        if(event.key == pygame.K_4 or event.key == pygame.K_KP4):
+            key = 4
+        if(event.key == pygame.K_5 or event.key == pygame.K_KP5):
+            key = 5
+        if(event.key == pygame.K_6 or event.key == pygame.K_KP6):
+            key = 6
+        if(event.key == pygame.K_7 or event.key == pygame.K_KP7):
+            key = 7
+        if(event.key == pygame.K_8 or event.key == pygame.K_KP8):
+            key = 8
+        if(event.key == pygame.K_9 or event.key == pygame.K_KP9):
+            key = 9
+        if(event.key == pygame.K_DELETE or event.key == pygame.K_BACKSPACE):
+            self.grid.set_val(0)
+            self.grid.set_temp(0)
+
+        return key
+        
+    def move_cursor(self, key, event):
+        i, j = self.grid.selected
+        if(event.key == pygame.K_LEFT):
+            i = i - 1
+            if i < 0:
+                i = 0
+            key = 0
+            self.grid.select(i, j)
+        if(event.key == pygame.K_RIGHT):
+            i = i + 1
+            if i + 1 > self.grid.row:
+                i = self.grid.row - 1
+            key = 0
+            self.grid.select(i, j)
+        if(event.key == pygame.K_UP):
+            j = j - 1
+            if j < 0:
+                j = 0
+            key = 0
+            self.grid.select(i, j)
+        if(event.key == pygame.K_DOWN):
+            j = j + 1
+            if j + 1 > self.grid.col:
+                j = self.grid.col - 1
+            key = 0
+            self.grid.select(i, j)
+        
+        if(not self.started):
+            i = self.grid.selected[0]
+            j = self.grid.selected[1]
+            if(self.grid.cubes[i][j].val != 0):
+                key = self.grid.cubes[i][j].val
+        return key
+
     def execute(self):
         self.run = True
         
@@ -277,8 +333,14 @@ class Sudoku_GUI:
             clock = pygame.time.Clock()
             clock.tick(60)
             pos = pygame.mouse.get_pos()
-            key = 0
 
+            if(self.grid.selected):
+                i = self.grid.selected[0]
+                j = self.grid.selected[1]
+                key = self.grid.cubes[i][j].val
+            else:
+                key = 0
+            
             if(self.started):
                 self.buttons = self.b[:-2]
             else:
@@ -289,65 +351,19 @@ class Sudoku_GUI:
                     self.run = False
 
                 if(event.type == pygame.KEYDOWN):
-                    if(event.key == pygame.K_1 or event.key == pygame.K_KP1):
-                        key = 1
-                    if(event.key == pygame.K_2 or event.key == pygame.K_KP2):
-                        key = 2
-                    if(event.key == pygame.K_3 or event.key == pygame.K_KP3):
-                        key = 3
-                    if(event.key == pygame.K_4 or event.key == pygame.K_KP4):
-                        key = 4
-                    if(event.key == pygame.K_5 or event.key == pygame.K_KP5):
-                        key = 5
-                    if(event.key == pygame.K_6 or event.key == pygame.K_KP6):
-                        key = 6
-                    if(event.key == pygame.K_7 or event.key == pygame.K_KP7):
-                        key = 7
-                    if(event.key == pygame.K_8 or event.key == pygame.K_KP8):
-                        key = 8
-                    if(event.key == pygame.K_9 or event.key == pygame.K_KP9):
-                        key = 9
+                    key = self.get_pressed_number(event)    # handle numbers
                     
-                    if(self.grid.selected):
-                        if(event.key == pygame.K_LEFT):
-                            i = self.grid.selected[0] - 1
-                            j = self.grid.selected[1]
-                            if i < 0:
-                                i = 0
-                            self.grid.select(i, j)
-                        if(event.key == pygame.K_RIGHT):
-                            i = self.grid.selected[0] + 1
-                            j = self.grid.selected[1]
-                            if i > self.grid.row:
-                                i = self.grid.row
-                            self.grid.select(i, j)
-                        if(event.key == pygame.K_UP):
-                            i = self.grid.selected[0]
-                            j = self.grid.selected[1] - 1
-                            if j > self.grid.col:
-                                j = self.grid.col
-                            self.grid.select(i, j)
-                        if(event.key == pygame.K_DOWN):
-                            i = self.grid.selected[0]
-                            j = self.grid.selected[1] + 1
-                            if j < 0:
-                                j = 0
-                            self.grid.select(i, j)
-                        
-                        
-
-
-                    if(event.key == pygame.K_RETURN):   ################################### controllare
-                        key = 0
-
-                    if(not self.started):
+                    if(self.grid.selected):                 # handle moving cursor with arrow keys
+                        key = self.move_cursor(key, event)
+                    
+                    if(not self.started):                   # setup custom grid
                         self.grid.set_val(key)
                     else:
                         if(key != 0):
-                            self.grid.set_temp(key)
-                        if(event.key == pygame.K_RETURN):
+                            self.grid.set_temp(key)         # temporary value
+                        if(event.key == pygame.K_RETURN):   # new val becomes fixed after RETURN only
                             self.grid.set_val(key)
-
+                    
                 if(event.type == pygame.MOUSEMOTION):
                     for b in self.buttons:
                         if(b.is_over(pos)[0]):
@@ -362,9 +378,8 @@ class Sudoku_GUI:
                                 b.fun()
                                 if(b.is_over(pos)[1] == 'New game'):
                                     self.started = False
-                                elif(b.is_over(pos)[1] == 'Start game'):
+                                elif(b.is_over(pos)[1] == 'Start game' or b.is_over(pos)[1] == 'Random'):
                                     self.started = True
-
                     else:                   # check grid click
                         i, j = self.grid.get_clicked_cube(pos)
                         self.grid.select(i, j)
