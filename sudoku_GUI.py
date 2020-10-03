@@ -38,6 +38,7 @@ class Cube:
         self.width = width
         self.height = height
         self.selected = False
+        self.correct = 0
 
     def draw(self, win):
         size = 60
@@ -65,6 +66,11 @@ class Cube:
         if(self.selected):
             pygame.draw.rect(win, (255,0,0), (x, y, self.width, self.height), 4)
         
+        if(self.correct == 1):
+            color = (0, 200, 0)
+        elif(self.correct == 2):
+            color = (200, 0, 0)
+
         font = pygame.font.SysFont('Comic Sans MS', size)
         string = font.render(str(s), 1, color)
         win.blit(string, (pos_x, pos_y))
@@ -90,6 +96,7 @@ class Grid:
                 if(not self.cubes[i][j].is_grid):
                     self.cubes[i][j].temp = 0
                     self.cubes[i][j].val = 0
+                self.cubes[j][i].correct = 0
 
         print('RESET')
     
@@ -100,6 +107,7 @@ class Grid:
                     self.cubes[i][j].val = 0
                     self.cubes[i][j].is_grid = False
                     self.cubes[i][j].selected = False
+                    self.cubes[j][i].correct = False
         self.selected = None
 
         print('NEW')
@@ -145,36 +153,60 @@ class Grid:
         with open('grids.json', 'r') as f:
             data = json.load(f)
         i = str(randint(0, len(data.keys()) - 1))
-        
+        i = '3'
         sudoku_grid = data[i]
         for i in range(len(sudoku_grid)):
             for j in range(len(sudoku_grid[0])):
-                self.cubes[i][j].val = sudoku_grid[i][j]
+                self.cubes[i][j].val = sudoku_grid[j][i]
         self.fix_grid()
         print('RANDOM')
 
     def check_solution(self):
+        start_grid = []
         grid = []
         for i in range(0, self.row):
+            start_temp = []
             temp = []
             for j in range(0, self.col):
-                temp.append(self.cubes[i][j].val)
+                temp.append(self.cubes[j][i].val)
+                if(self.cubes[j][i].is_grid):
+                    start_temp.append(self.cubes[j][i].val)
+                else:
+                    start_temp.append(0)
             grid.append(temp)
+            start_grid.append(start_temp)
         
-        result = deepcopy(grid)
-        solve(result, DIM)
-        
+        corrected_grid = deepcopy(start_grid)
+        solve(corrected_grid, DIM)
+        print(start_grid)
+        print(corrected_grid)
+        print(grid)
+        print('>>>>>>>>>>>>>>>>>>>>>>')
         correct = True
         for i in range(0, self.row):
             for j in range(0, self.col):
-                if(result[i][j] != grid[i][j]):
+                if(corrected_grid[i][j] != grid[i][j]):
                     correct = False
         
         if(correct):
+            result = 1
             print("Sudoku solved!")
         else:
+            result = 2
             print('Sudoku not solved. Restart it')
-                
+
+        for i in range(0, self.row):
+            for j in range(0, self.col):
+                self.cubes[j][i].correct = result
+
+    def count_free_cubes(self):
+        count = DIM * DIM
+        for i in range(0, self.row):
+            for j in range(0, self.col):
+                if(self.cubes[i][j].val != 0):
+                    count -= 1
+        return count
+
     def get_clicked_cube(self, mouse_pos):
             space_x = self.width / self.row
             space_y = self.height / self.col
@@ -263,9 +295,6 @@ class Sudoku_GUI:
 
         self.execute()
 
-    def handle_mouse(self):
-        pass
-
     def get_pressed_number(self, event):
         key = 0
         if(event.key == pygame.K_1 or event.key == pygame.K_KP1):
@@ -332,6 +361,7 @@ class Sudoku_GUI:
         while(self.run):
             clock = pygame.time.Clock()
             clock.tick(60)
+
             pos = pygame.mouse.get_pos()
 
             if(self.grid.selected):
@@ -362,7 +392,11 @@ class Sudoku_GUI:
                         if(key != 0):
                             self.grid.set_temp(key)         # temporary value
                         if(event.key == pygame.K_RETURN):   # new val becomes fixed after RETURN only
+                            if(self.grid.cubes[i][j].val != 0):
+                                key = self.grid.cubes[i][j].val
                             self.grid.set_val(key)
+                            if(self.grid.count_free_cubes() == 0):
+                                self.grid.check_solution()
                     
                 if(event.type == pygame.MOUSEMOTION):
                     for b in self.buttons:
