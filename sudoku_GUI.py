@@ -17,10 +17,10 @@ HEIGHT = 940
 DIM = 9
 LINE_COLOR = (0, 0, 0)    # black
 BORDER_COLOR = (200, 0, 0)    # red
-GREEN_BUTTON_OFF = (0, 180, 0)
-GREEN_BUTTON_ON = (0, 220, 0)
-YELLOW_BUTTON_OFF = (200, 200, 0)
-YELLOW_BUTTON_ON = (225, 225, 0)
+BLUE_BUTTON_OFF = (110, 214, 255)
+BLUE_BUTTON_ON = (102, 204, 255)
+GREEN_BUTTON_OFF = (163, 255, 231)
+GREEN_BUTTON_ON = (153, 255, 221)
 RED_BUTTON_OFF = (235, 0, 0)
 RED_BUTTON_ON = (255, 0, 0)
 
@@ -38,6 +38,7 @@ class Cube:
         self.width = width
         self.height = height
         self.selected = False
+        self.help = False
         self.correct = 0
 
     def draw(self, win):
@@ -64,7 +65,9 @@ class Cube:
             pos_y = y + 5
             
         if(self.selected):
-            pygame.draw.rect(win, (255,0,0), (x, y, self.width, self.height), 4)
+            pygame.draw.rect(win, (204, 255, 255), (x, y, self.width, self.height))
+        elif(self.help):
+            pygame.draw.rect(win, (235, 235, 235), (x, y, self.width, self.height))
         
         if(self.correct == 1):
             color = (0, 200, 0)
@@ -119,6 +122,29 @@ class Grid:
                 temp.append(self.cubes[i][j].val)
             gr.append(temp)
 
+    def highlight(self):
+        row, col = self.selected
+        
+        for i in range(0, self.row):
+            for j in range(0, self.col):
+                self.cubes[i][j].help = False
+
+        for j in range(0, self.row):
+            # row
+            if(j != col):
+                self.cubes[row][j].help = True
+            # col
+            if(j != row):
+                self.cubes[j][col].help = True
+
+        # 3x3 square
+        small_row = floor(row / 3) * 3
+        small_col = floor(col / 3) * 3
+        
+        for i in range(small_row, small_row + 3):
+            for j in range(small_col, small_col + 3):
+                self.cubes[i][j].help = True
+
     def set_temp(self, k):
         if(self.selected):
             i = self.selected[0]
@@ -142,6 +168,7 @@ class Grid:
 
         self.cubes[ii][jj].selected = True
         self.selected = (ii, jj)
+        self.highlight()
     
     def random(self):
         with open('grids.json', 'r') as f:
@@ -253,7 +280,7 @@ class Button:
 
         if(self.text != ''):
             button_font = pygame.font.SysFont('Comic Sans MS', 45)
-            text = button_font.render(str(self.text), 1, (255, 255, 255))
+            text = button_font.render(str(self.text), 1, (100, 100, 100))
             pygame.draw.rect(win, self.color, (self.x,self.y,self.width,self.height), 0)
             
             win.blit(text, (self.x + (self.width/2 - text.get_width()/2), self.y + (self.height/2 - text.get_height()/2)))
@@ -278,12 +305,14 @@ class Sudoku_GUI:
         self.grid = Grid(self.win, self.width, self.width, DIM, DIM)
         self.started = False
         self.finished = False
+        self.moves_list = []
+        self.movement_cursor = 0
 
-        new_btn = Button(GREEN_BUTTON_OFF, GREEN_BUTTON_ON, 20, self.height - 105, 170, 70, f=self.grid.new_game, text='New game')
-        random_btn = Button(YELLOW_BUTTON_OFF, YELLOW_BUTTON_ON, 220, self.height - 105, 190, 70, f=self.grid.random, text='Random')
-        reset_btn = Button(YELLOW_BUTTON_OFF, YELLOW_BUTTON_ON, 220, self.height - 105, 190, 70, f=self.grid.reset, text='Restart')
+        new_btn = Button(BLUE_BUTTON_OFF, BLUE_BUTTON_ON, 20, self.height - 105, 170, 70, f=self.grid.new_game, text='New game')
+        random_btn = Button(GREEN_BUTTON_OFF, GREEN_BUTTON_ON, 220, self.height - 105, 190, 70, f=self.grid.random, text='Random')
+        reset_btn = Button(GREEN_BUTTON_OFF, GREEN_BUTTON_ON, 220, self.height - 105, 190, 70, f=self.grid.reset, text='Restart')
         # solve_btn = Button(RED_BUTTON_OFF, RED_BUTTON_ON, 520, self.height - 85, 185, 70, f=self.grid.check_solution, text='Solve game')
-        start_btn = Button(GREEN_BUTTON_OFF, GREEN_BUTTON_ON, 20, self.height - 105, 170, 70, f=self.grid.fix_grid, text='Start game')
+        start_btn = Button(BLUE_BUTTON_OFF, BLUE_BUTTON_ON, 20, self.height - 105, 170, 70, f=self.grid.fix_grid, text='Start game')
         self.b = [new_btn, reset_btn, random_btn, start_btn]
 
         self.execute()
@@ -394,6 +423,8 @@ class Sudoku_GUI:
                         if(event.key == pygame.K_RETURN):   # new val becomes fixed after RETURN only
                             if(self.grid.cubes[i][j].val != 0):
                                 key = self.grid.cubes[i][j].val
+                                
+
                             self.grid.set_val(key)
                             if(self.grid.count_free_cubes() == 0):
                                 if(self.grid.check_solution()):
@@ -439,8 +470,8 @@ class Sudoku_GUI:
         space = self.width / DIM
 
         font = pygame.font.SysFont('Comic Sans MS', 45)
-        string = font.render('Elapsed time:  ' + get_formatted_time(self.playing_time), 1, (255, 0, 0))
-        self.win.blit(string, (self.width / 2 + 40, 9 * space + 55))
+        string = font.render('Elapsed time:  ' + get_formatted_time(self.playing_time), 1, (51, 153, 255))
+        self.win.blit(string, (self.width / 2 + 80, 9 * space + 55))
 
         for b in self.buttons:
             b.draw(self.win, 1)
