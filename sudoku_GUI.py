@@ -309,7 +309,9 @@ class Sudoku_GUI:
         if(event.key == pygame.K_9 or event.key == pygame.K_KP9):
             key = 9
         if((event.key == pygame.K_DELETE or event.key == pygame.K_BACKSPACE) and not self.finished):
-            self.grid.set_val(0)
+            i, j = self.grid.selected
+            if(not self.grid.cubes[i][j].is_grid):
+                self.grid.set_val(0)
             self.grid.set_temp(0)
 
         return key
