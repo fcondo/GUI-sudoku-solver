@@ -97,8 +97,6 @@ class Grid:
                     self.cubes[i][j].temp = 0
                     self.cubes[i][j].val = 0
                 self.cubes[j][i].correct = 0
-
-        print('RESET')
     
     def new_game(self):
         for i in range(0, self.row):
@@ -109,8 +107,6 @@ class Grid:
                     self.cubes[i][j].selected = False
                     self.cubes[j][i].correct = False
         self.selected = None
-
-        print('NEW')
     
     def fix_grid(self):
         gr = []
@@ -122,8 +118,6 @@ class Grid:
                     self.cubes[i][j].color = (100, 100, 100)
                 temp.append(self.cubes[i][j].val)
             gr.append(temp)
-        
-            print('FIX')
 
     def set_temp(self, k):
         if(self.selected):
@@ -153,13 +147,11 @@ class Grid:
         with open('grids.json', 'r') as f:
             data = json.load(f)
         i = str(randint(0, len(data.keys()) - 1))
-        i = '3' ################################################
         sudoku_grid = data[i]
         for i in range(len(sudoku_grid)):
             for j in range(len(sudoku_grid[0])):
                 self.cubes[i][j].val = sudoku_grid[j][i]
         self.fix_grid()
-        print('RANDOM')
 
     def check_solution(self):
         start_grid = []
