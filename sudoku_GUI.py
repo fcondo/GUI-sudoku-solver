@@ -153,7 +153,7 @@ class Grid:
         with open('grids.json', 'r') as f:
             data = json.load(f)
         i = str(randint(0, len(data.keys()) - 1))
-        i = '3'
+        i = '3' ################################################
         sudoku_grid = data[i]
         for i in range(len(sudoku_grid)):
             for j in range(len(sudoku_grid[0])):
@@ -178,10 +178,7 @@ class Grid:
         
         corrected_grid = deepcopy(start_grid)
         solve(corrected_grid, DIM)
-        print(start_grid)
-        print(corrected_grid)
-        print(grid)
-        print('>>>>>>>>>>>>>>>>>>>>>>')
+
         correct = True
         for i in range(0, self.row):
             for j in range(0, self.col):
@@ -198,6 +195,7 @@ class Grid:
         for i in range(0, self.row):
             for j in range(0, self.col):
                 self.cubes[j][i].correct = result
+        return correct
 
     def count_free_cubes(self):
         count = DIM * DIM
@@ -236,9 +234,12 @@ class Grid:
         
         pygame.draw.line(self.win, BORDER_COLOR, (0, 9 * space), (self.width, 9 * space), 5)
 
-def get_time_format(t):
-    return '00:20'
+def get_formatted_time(s):
+    seconds = int(s % 60)
+    minutes = int(s / 60)
+    # hours = int(minutes / 60)
 
+    return ('{0}:{1}').format(minutes, seconds)
 
 class Button:
 
@@ -283,15 +284,15 @@ class Sudoku_GUI:
         self.win = pygame.display.set_mode((self.width, self.height))
         pygame.display.set_caption('Sudoku Solver')
         self.grid = Grid(self.win, self.width, self.width, DIM, DIM)
-        self.time = 0
         self.started = False
+        self.finished = False
 
         new_btn = Button(GREEN_BUTTON_OFF, GREEN_BUTTON_ON, 20, self.height - 105, 170, 70, f=self.grid.new_game, text='New game')
         random_btn = Button(YELLOW_BUTTON_OFF, YELLOW_BUTTON_ON, 220, self.height - 105, 190, 70, f=self.grid.random, text='Random')
         reset_btn = Button(YELLOW_BUTTON_OFF, YELLOW_BUTTON_ON, 220, self.height - 105, 190, 70, f=self.grid.reset, text='Restart')
-        solve_btn = Button(RED_BUTTON_OFF, RED_BUTTON_ON, 520, self.height - 85, 185, 70, f=self.grid.check_solution, text='Solve game')
+        # solve_btn = Button(RED_BUTTON_OFF, RED_BUTTON_ON, 520, self.height - 85, 185, 70, f=self.grid.check_solution, text='Solve game')
         start_btn = Button(GREEN_BUTTON_OFF, GREEN_BUTTON_ON, 20, self.height - 105, 170, 70, f=self.grid.fix_grid, text='Start game')
-        self.b = [new_btn, reset_btn, solve_btn, random_btn, start_btn]
+        self.b = [new_btn, reset_btn, random_btn, start_btn]
 
         self.execute()
 
@@ -315,7 +316,7 @@ class Sudoku_GUI:
             key = 8
         if(event.key == pygame.K_9 or event.key == pygame.K_KP9):
             key = 9
-        if(event.key == pygame.K_DELETE or event.key == pygame.K_BACKSPACE):
+        if((event.key == pygame.K_DELETE or event.key == pygame.K_BACKSPACE) and not self.finished):
             self.grid.set_val(0)
             self.grid.set_temp(0)
 
@@ -357,10 +358,20 @@ class Sudoku_GUI:
 
     def execute(self):
         self.run = True
-        
+        start = time.time()
+        self.playing_time = 0
+
         while(self.run):
             clock = pygame.time.Clock()
             clock.tick(60)
+
+            if(self.started):
+                if(not self.finished):
+                    self.playing_time = time.time() - start
+                self.buttons = self.b[:-2]
+            else:
+                self.playing_time = 0
+                self.buttons = self.b[-2:]
 
             pos = pygame.mouse.get_pos()
 
@@ -371,11 +382,6 @@ class Sudoku_GUI:
             else:
                 key = 0
             
-            if(self.started):
-                self.buttons = self.b[:-2]
-            else:
-                self.buttons = self.b[-2:]
-
             for event in pygame.event.get():
                 if(event.type == pygame.QUIT):
                     self.run = False
@@ -396,7 +402,10 @@ class Sudoku_GUI:
                                 key = self.grid.cubes[i][j].val
                             self.grid.set_val(key)
                             if(self.grid.count_free_cubes() == 0):
-                                self.grid.check_solution()
+                                if(self.grid.check_solution()):
+                                    # self.started = False
+                                    self.finished = True
+
                     
                 if(event.type == pygame.MOUSEMOTION):
                     for b in self.buttons:
@@ -412,8 +421,15 @@ class Sudoku_GUI:
                                 b.fun()
                                 if(b.is_over(pos)[1] == 'New game'):
                                     self.started = False
+                                    self.finished = False
                                 elif(b.is_over(pos)[1] == 'Start game' or b.is_over(pos)[1] == 'Random'):
                                     self.started = True
+                                    self.finished = False
+                                    start = time.time()
+                                elif(b.is_over(pos)[1] == 'Restart' or b.is_over(pos)[1] == 'Solve'):
+                                    start = time.time()
+                                    self.finished = False
+                                    
                     else:                   # check grid click
                         i, j = self.grid.get_clicked_cube(pos)
                         self.grid.select(i, j)
@@ -428,9 +444,9 @@ class Sudoku_GUI:
         self.grid.draw()
         space = self.width / DIM
 
-        font = pygame.font.SysFont('Comic Sans MS', 50)
-        string = font.render('Elapsed time:  ' + get_time_format(time), 1, (255, 0, 0))
-        self.win.blit(string, (self.width / 2 + 42, 9 * space + 10))
+        font = pygame.font.SysFont('Comic Sans MS', 45)
+        string = font.render('Elapsed time:  ' + get_formatted_time(self.playing_time), 1, (255, 0, 0))
+        self.win.blit(string, (self.width / 2 + 40, 9 * space + 55))
 
         for b in self.buttons:
             b.draw(self.win, 1)
