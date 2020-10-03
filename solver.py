@@ -6,8 +6,6 @@
 
 from math import floor
 
-DIM = 9
-
 def print_grid(gr):
     """
     Prints a sudoku grid
@@ -42,7 +40,7 @@ def find_empty_cells(gr):
                 l.append([i, j])
     return l
 
-def check_dim(gr):
+def check_dim(gr, DIM):
     """
     Checks if it is a 9x9 grid 
     :param gr: 2D list
@@ -56,16 +54,15 @@ def check_dim(gr):
         if(len(gr[i]) != l):
             return False 
     return True
-
-def solve(gr):
+    
+def solve(gr, DIM):
     """
     Solves the sudoku
     :param gr: 2D list
     :return: None
     """
-    
     # dimension check
-    if(not check_dim(gr)):
+    if(not check_dim(gr, DIM)):
         print('ERROR in the grid dimension')
         return
 
@@ -94,7 +91,7 @@ def solve(gr):
             i = available_cells[pos][0]
             j = available_cells[pos][1]
             gr[i][j] += 1
-        
+
 def is_valid(gr, pos, num):
     """
     Checks if a given number can be put in the pos (i, j) position of the grid 
